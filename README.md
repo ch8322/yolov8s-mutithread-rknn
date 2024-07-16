@@ -1,24 +1,3 @@
-# yolov8pose模型（CSDN博主）
-* yolov8pose的模型参考csdn博主的方法，将yolov8pose.pt模型导出为onnx模型；
-* 然后按照瑞芯微模型转换的方法，将onnx模型转为RKNN模型；
-* 参考链接方法：https://blog.csdn.net/zhangqian_1/article/details/133267470
-* https://github.com/cqu20160901/yolov8pose_rknn_Cplusplus
-
-
-# rtmpose模型
-* 配置mmpose的环境；
-* 按照mmpose模型导出的方法，导出onnx模型文件，再按照瑞芯微模型转换的方法，将onnx模型转换为RKNN模型；
-* https://mmpose.readthedocs.io/zh-cn/dev-1.x/user_guides/how_to_deploy.html
-
-
-# yolov8s模型（CSDN博主）
-* yolov8s的模型参考csdn博主的方法，将yolov8s.pt模型导出为onnx模型；
-* 然后按照瑞芯微官方的方法，将onnx模型转为RKNN模型；
-* 参考链接方法：https://blog.csdn.net/zhangqian_1/article/details/128918268
-* https://github.com/cqu20160901/yolov8n_onnx_tensorRT_rknn_horizon
-
-
-
 # yolov8s模型（RK官方）
 * 按照RKNN官方的方法，使用rk的yolov8代码，导出onnx模型，然后再转成RKNN模型；
 * RK的yolov8源码链接：https://github.com/airockchip/ultralytics_yolov8
