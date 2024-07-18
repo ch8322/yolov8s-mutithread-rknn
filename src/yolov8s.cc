@@ -130,7 +130,7 @@ int rkyolov8s::interf()
     cv::cvtColor(ori_img, img, cv::COLOR_BGR2RGB);
     int img_width = img.cols;
     int img_height = img.rows;
-    printf("yolov8_width = %d, yolov8_height = %d\n", img_width, img_height);
+    // printf("yolov8_width = %d, yolov8_height = %d\n", img_width, img_height);
 
     ///////// letterbox //////////////////
     BOX_RECT pads;
