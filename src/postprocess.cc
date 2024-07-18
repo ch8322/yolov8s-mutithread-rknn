@@ -479,7 +479,7 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
 
     /* box valid detect target */ 
     // 遍历排序后的索引
-    //将存储的模型尺寸中的坐标映射到原始输入图像中
+    //将模型尺寸的坐标映射到原始输入图像中，并存储最终的结果以便于将检测框绘制在原图上
     for(int i = 0; i < validCount; ++i)
     {
         // 如果索引为-1或者目标数量已经达到上限，继续下一轮循环
