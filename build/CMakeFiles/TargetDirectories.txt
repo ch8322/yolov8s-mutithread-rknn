@@ -1,7 +1,0 @@
-/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build/CMakeFiles/install/strip.dir
-/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build/CMakeFiles/install/local.dir
-/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build/CMakeFiles/install.dir
-/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build/CMakeFiles/list_install_components.dir
-/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build/CMakeFiles/rebuild_cache.dir
-/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build/CMakeFiles/edit_cache.dir
-/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build/CMakeFiles/rknn_yolov8_demo.dir
