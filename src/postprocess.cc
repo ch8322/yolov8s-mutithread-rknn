@@ -122,7 +122,7 @@ static int nms(int validCount, std::vector<float> &outputLocations, std::vector<
 
             float iou = CalculateOverlap(xmin0, ymin0, xmax0, ymax0, xmin1, ymin1, xmax1, ymax1);
 
-            if(iou > threshold)
+            if(iou > threshold)   //如果IoU超过nms阈值，则将检测框标记为 -1（即移除该检测框）
             {
                 order[j] = -1;
             }
@@ -179,18 +179,22 @@ inline static int32_t __clip(float val, float min, float max)
 static int8_t qnt_f32_to_affine(float f32, int32_t zp, float scale)
 {
     float dst_val = (f32 / scale) + zp;
-    int8_t res = (int8_t)__clip(dst_val, -128, 127);
+    int8_t res = (int8_t)__clip(dst_val, -128, 127);   //将数值裁剪到8位整数的范围内（-128 到 127）
     return res;
 }
 
 // 这个函数的作用是将一个8位整数（int8_t）进行反量化（Dequantization）转换为浮点数。
-static float deqnt_affine_to_f32(int8_t qnt, int32_t zp, float scale) { return ((float)qnt - (float)zp) * scale; }
-
+static float deqnt_affine_to_f32(int8_t qnt, int32_t zp, float scale) 
+{ 
+    return ((float)qnt - (float)zp) * scale; 
+}
 
 //目的是将神经网络输出的归一化值转化为最终的目标框坐标
+//计算离散边界框的实际值
 void compute_dfl(float* tensor, int dfl_len, float* box)
 {
-    for(int b=0; b<4; b++){
+    for(int b=0; b<4; b++)
+    {
         // 定义一个数组用于存储指数函数的值
         float exp_t[dfl_len];
         // 存储所有指数函数的和
@@ -199,13 +203,15 @@ void compute_dfl(float* tensor, int dfl_len, float* box)
         float acc_sum=0;
 
         // 计算指数函数并累加到 exp_sum 中
-        for(int i=0; i< dfl_len; i++){
+        for(int i=0; i< dfl_len; i++)
+        {
             exp_t[i] = exp(tensor[i+b*dfl_len]);
             exp_sum += exp_t[i];
         }
 
         // 计算加权平均值的累积和
-        for(int i=0; i< dfl_len; i++){
+        for(int i=0; i< dfl_len; i++)
+        {
             acc_sum += exp_t[i]/exp_sum *i;
         }
         // 将加权平均值存储到结果数组 box 中
@@ -227,7 +233,7 @@ static int process_i8(int8_t *box_tensor, int32_t box_zp, float box_scale,
     // 计算网格总数
     int grid_len = grid_h * grid_w;
     // 将浮点数转换为8位整数
-    int8_t score_thres_i8 = qnt_f32_to_affine(threshold, score_zp, score_scale);
+    int8_t score_thres_i8 = qnt_f32_to_affine(threshold, score_zp, score_scale);   //置信度阈值
     int8_t score_sum_thres_i8 = qnt_f32_to_affine(threshold, score_sum_zp, score_sum_scale);
     
     //遍历每个网格
@@ -235,38 +241,44 @@ static int process_i8(int8_t *box_tensor, int32_t box_zp, float box_scale,
     {
         for(int j = 0; j < grid_w; j++)
         {
-            int offset = i* grid_w + j;
-            int max_class_id = -1;
+            int offset = i* grid_w + j;   //当前网格单元在特征图中的偏移量
+            int max_class_id = -1;    //用于记录当前网格单元中的最大类别ID,初始化为-1
 
-            // 通过 score sum 起到快速过滤的作用
-            if(score_sum_tensor != nullptr){
-                if(score_sum_tensor[offset] < score_sum_thres_i8)
+            if(score_sum_tensor != nullptr)   
+            {
+                if(score_sum_tensor[offset] < score_sum_thres_i8)   // 通过score_sum_tensor进行快速过滤，如果类别分数和小于阈值，则跳过该网格
                 {
                     continue;
                 }
             }
 
-            int8_t max_score = -score_zp;
-            for(int c= 0; c< OBJ_CLASS_NUM; c++){
-                if((score_tensor[offset] > score_thres_i8) && (score_tensor[offset] > max_score))
+            //计算最大类别分数和ID
+            int8_t max_score = -score_zp;   //初始化 max_score 为最低可能的量化分数
+            for(int c= 0; c< OBJ_CLASS_NUM; c++)   //遍历所有类别，找到最大类别分数和对应的类别ID
+            {
+                if((score_tensor[offset] > score_thres_i8) && (score_tensor[offset] > max_score))   //如果当前类别分数大于阈值并且大于当前最大分数，则更新最大分数和类别ID
                 {
-                    max_score = score_tensor[offset];
+                    max_score = score_tensor[offset];   //当前类别的量化分数
                     max_class_id = c;
                 }
                 offset += grid_len;
             }
 
             // compute box
-            if(max_score> score_thres_i8){
+            //解码边界框
+            if(max_score> score_thres_i8)   //如果最大类别分数大于阈值，则进行边界框的解码
+            {
                 offset = i* grid_w + j;
                 float box[4];
-                float before_dfl[dfl_len*4];
-                for(int k=0; k< dfl_len*4; k++){
-                    before_dfl[k] = deqnt_affine_to_f32(box_tensor[offset], box_zp, box_scale);
+                float before_dfl[dfl_len*4];   //存储解码前的离散边界框数据
+                for(int k=0; k< dfl_len*4; k++)
+                {
+                    before_dfl[k] = deqnt_affine_to_f32(box_tensor[offset], box_zp, box_scale);  //将一个8位整数（int8_t）进行反量化（Dequantization）转换为浮点数
                     offset += grid_len;
                 }
-                compute_dfl(before_dfl, dfl_len, box);
+                compute_dfl(before_dfl, dfl_len, box);   //通过计算离散边界框的加权平均值，得到边界框的实际值
 
+                //将特征图尺寸中的坐标映射到模型尺寸上
                 float x1,y1,x2,y2,w,h;
                 x1 = (-box[0] + j + 0.5)*stride;
                 y1 = (-box[1] + i + 0.5)*stride;
@@ -355,11 +367,12 @@ static int process_fp32(float *box_tensor, float *score_tensor, float *score_sum
 
 int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float conf_threshold, float nms_threshold, float scale_w, float scale_h, detect_result_group_t *od_results)
 {
+    //初始化标签
     static int init = -1;
     if (init == -1)
     {
         int ret = 0;
-        ret = loadLabelName(LABEL_NALE_TXT_PATH, labels);
+        ret = loadLabelName(LABEL_NALE_TXT_PATH, labels);  //从文件中读取标签并存储在 labels 数组中
         if (ret < 0)
         {
             return -1;
@@ -384,8 +397,8 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
     // 将目标检测结果结构体的内存区域全部设置为零
     memset(od_results, 0, sizeof(detect_result_group_t));
 
-    int dfl_len = rknn_app->output_attrs[0].dims[1] / 4;    // 64/4=16
-    int output_per_branch = rknn_app->io_num.n_output / 3;   // 9/3=3
+    int dfl_len = rknn_app->output_attrs[0].dims[1] / 4;    // 64/4=16  特征图每个通道的长度
+    int output_per_branch = rknn_app->io_num.n_output / 3;   // 9/3=3   每个分支的输出数
     
     // 遍历三个分支
     for(int i = 0; i < 3; i++)
@@ -395,7 +408,8 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
         int32_t score_sum_zp = 0;
         float score_sum_scale = 1.0;
         // 如果每个分支的输出数为3，则获取 score_sum 的相关信息
-        if(output_per_branch == 3){
+        if(output_per_branch == 3)
+        {
             score_sum = outputs[i*output_per_branch + 2].buf;
             score_sum_zp = rknn_app->output_attrs[i*output_per_branch + 2].zp;
             score_sum_scale = rknn_app->output_attrs[i*output_per_branch + 2].scale;
@@ -441,19 +455,19 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
     }
     
     // 创建用于存储排序后索引的向量
-    std::vector<int> indexArray;
+    std::vector<int> indexArray;   
     // 将有效目标的索引加入到 indexArray 中
     for(int i = 0; i < validCount; ++i)
     {
         indexArray.push_back(i);
     }
-    // 对置信度进行排序，并记录排序后的索引到 indexArray 中
+    // 对置信度进行降序排序，并存储到 indexArray 中
     quick_sort_indice_inverse(objProbs, 0, validCount - 1, indexArray);
     
-    // 创建用于存储类别的集合
+    // 创建 class_set 用于存储所有检测到的类别ID的集合
     std::set<int> class_set(std::begin(classId), std::end(classId));
     
-    // 针对每个类别应用非极大值抑制（NMS）
+    // 针对每个类别应用非极大值抑制（NMS），过滤掉重叠过多的检测框
     for(auto c : class_set)
     {
         nms(validCount, filterBoxes, classId, indexArray, c, nms_threshold);
@@ -465,6 +479,7 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
 
     /* box valid detect target */ 
     // 遍历排序后的索引
+    //将存储的模型尺寸中的坐标映射到原始输入图像中
     for(int i = 0; i < validCount; ++i)
     {
         // 如果索引为-1或者目标数量已经达到上限，继续下一轮循环
@@ -474,7 +489,7 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
         }
         // 获取当前目标的索引
         int n = indexArray[i];
-        // 根据索引获取目标框的坐标信息,类别和置信度
+        // 根据索引获取目标框的坐标信息,类别和置信度（这也是还在模型尺寸上）
         float x1 = filterBoxes[n * 4 + 0] - pads.left;
         float y1 = filterBoxes[n * 4 + 1] - pads.top;
         float x2 = x1 + filterBoxes[n * 4 + 2];
@@ -483,8 +498,8 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
         float obj_conf = objProbs[i];
 
         // 根据 letterbox 的信息进行坐标调整
-        od_results->results[last_count].box.left = (int)(clamp(x1, 0, model_in_w) / scale_w);
-        od_results->results[last_count].box.top = (int)(clamp(y1, 0, model_in_h) / scale_h);
+        od_results->results[last_count].box.left = (int)(clamp(x1, 0, model_in_w) / scale_w);   //clamp 用于将坐标值限制在模型输入的宽度和高度范围内
+        od_results->results[last_count].box.top = (int)(clamp(y1, 0, model_in_h) / scale_h);    //将坐标从模型尺寸映射回原始输入图像
         od_results->results[last_count].box.right = (int)(clamp(x2, 0, model_in_w) / scale_w);
         od_results->results[last_count].box.bottom = (int)(clamp(y2, 0, model_in_h) / scale_h);
         od_results->results[last_count].prop = obj_conf;

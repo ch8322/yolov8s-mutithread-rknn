@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build",
+  "command": "/usr/bin/c++   -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include/3rdparty/opencv/include/opencv4 -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include/3rdparty/rga/RK3588/include  -pthread -g   -std=gnu++11 -o CMakeFiles/rknn_yolov8_demo.dir/src/main.cc.o -c /home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/src/main.cc",
+  "file": "/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/src/main.cc"
+},
+{
+  "directory": "/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build",
+  "command": "/usr/bin/c++   -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include/3rdparty/opencv/include/opencv4 -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include/3rdparty/rga/RK3588/include  -pthread -g   -std=gnu++11 -o CMakeFiles/rknn_yolov8_demo.dir/src/postprocess.cc.o -c /home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/src/postprocess.cc",
+  "file": "/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/src/postprocess.cc"
+},
+{
+  "directory": "/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/build",
+  "command": "/usr/bin/c++   -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include/3rdparty/opencv/include/opencv4 -I/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/include/3rdparty/rga/RK3588/include  -pthread -g   -std=gnu++11 -o CMakeFiles/rknn_yolov8_demo.dir/src/yolov8s.cc.o -c /home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/src/yolov8s.cc",
+  "file": "/home/abc/Desktop/test/11_rknn-cpp-Multithreading-1.5.0/src/yolov8s.cc"
+}
+]
