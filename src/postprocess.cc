@@ -10,6 +10,11 @@
 
 #include <set>
 #include <vector>
+
+#include <mutex>
+std::mutex initMutex;
+static bool isInitialized = false;
+
 #define LABEL_NALE_TXT_PATH "./model/coco_80_labels_list.txt"
 
 static char* labels[OBJ_CLASS_NUM];
@@ -266,7 +271,7 @@ static int process_i8(int8_t *box_tensor, int32_t box_zp, float box_scale,
 
             // compute box
             //解码边界框
-            if(max_score> score_thres_i8)   //如果最大类别分数大于阈值，则进行边界框的解码
+            if(max_score> score_thres_i8)   //如果最大类别分数大于阈值且类别ID为person，则进行边界框的解码
             {
                 offset = i* grid_w + j;
                 float box[4];
@@ -365,20 +370,43 @@ static int process_fp32(float *box_tensor, float *score_tensor, float *score_sum
     return validCount;
 }
 
+
+
+void cleanupResources()
+{
+    // Cleanup code here, e.g., freeing dynamically allocated resources.
+}
+
 int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float conf_threshold, float nms_threshold, float scale_w, float scale_h, detect_result_group_t *od_results)
 {
     //初始化标签
-    static int init = -1;
-    if (init == -1)
+    // static int init = -1;
+    // if (init == -1)
+    // {
+    //     int ret = 0;
+    //     ret = loadLabelName(LABEL_NALE_TXT_PATH, labels);  //从文件中读取标签并存储在 labels 数组中
+    //     if (ret < 0)
+    //     {
+    //         return -1;
+    //     }
+    //     init = 0;
+    // }
+
+    // 使用lock_guard对initMutex加锁，确保接下来的初始化过程线程安全，比上面的更安全
+    std::lock_guard<std::mutex> lock(initMutex);
+    // 检查是否已经初始化，避免重复初始化
+    if (!isInitialized)
     {
-        int ret = 0;
-        ret = loadLabelName(LABEL_NALE_TXT_PATH, labels);  //从文件中读取标签并存储在 labels 数组中
+        int ret = loadLabelName(LABEL_NALE_TXT_PATH, labels);   // 调用loadLabelName函数加载标签名称，返回值为加载结果
         if (ret < 0)
         {
+            fprintf(stderr, "Failed to load label names.\n");
             return -1;
         }
-        init = 0;
+        isInitialized = true;   // 标记初始化完成
+        atexit(cleanupResources);   // 注册清理资源的函数，在程序退出时调用
     }
+
     // 创建用于存储目标框信息的向量
     std::vector<float> filterBoxes;
     std::vector<float> objProbs;
@@ -487,8 +515,14 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
         {
             continue;
         }
-        // 获取当前目标的索引
+        
+        // 只保存想要的类别索引
         int n = indexArray[i];
+        if(classId[n] != 0) // PERSON_CLASS_ID 是 'person' 类别的 ID，请根据实际情况进行调整
+        {
+            continue;
+        }
+
         // 根据索引获取目标框的坐标信息,类别和置信度（这也是还在模型尺寸上）
         float x1 = filterBoxes[n * 4 + 0] - pads.left;
         float y1 = filterBoxes[n * 4 + 1] - pads.top;
