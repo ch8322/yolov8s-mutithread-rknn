@@ -1,4 +1,5 @@
 # yolov8s模型（RK官方）
+## v2.0分支是在多线程的基础上，改成了零拷贝
 * 按照RKNN官方的方法，使用rk的yolov8代码，导出onnx模型，然后再转成RKNN模型；
 * RK官方yolov8源码[yolov8s](https://github.com/airockchip/ultralytics_yolov8)
 * [多线程](https://github.com/leafqycc/rknn-cpp-Multithreading/tree/main)

@@ -7,12 +7,15 @@
 #include "rknn_api.h"
 #include "yolov8s.h"
 
+
 #define OBJ_NAME_MAX_SIZE 16
 #define OBJ_NUMB_MAX_SIZE 64
 #define OBJ_CLASS_NUM     80
 #define NMS_THRESH        0.45
 #define BOX_THRESH        0.25
 // #define PROP_BOX_SIZE     (5+OBJ_CLASS_NUM)
+
+void deinit_post_process();
 
 int loadLabelName(const char *locationFilename, char *label[]);
 char *readLine(FILE *fp, char *buffer, int *len);
@@ -43,6 +46,8 @@ typedef struct
 void letterbox(const cv::Mat &image, cv::Mat &padded_image, BOX_RECT &pads, const float scale, const cv::Size &target_size, const cv::Scalar &pad_color = cv::Scalar(128, 128, 128));
 
 int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float conf_threshold, float nms_threshold, float scale_w, float scale_h, detect_result_group_t *od_results);
+
+// int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs,  float conf_threshold, float nms_threshold, float scale_w, float scale_h,detect_result_group_t *od_results);
 
 void deinitPostProcess();
 

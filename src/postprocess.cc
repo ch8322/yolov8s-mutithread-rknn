@@ -19,6 +19,18 @@ static bool isInitialized = false;
 
 static char* labels[OBJ_CLASS_NUM];
 
+void deinit_post_process()
+{
+    for (int i = 0; i < OBJ_CLASS_NUM; i++)
+    {
+        if (labels[i] != nullptr)
+        {
+            free(labels[i]);
+            labels[i] = nullptr;
+        }
+    }
+}
+
 int loadLabelName(const char *locationFilename, char *label[])
 {
   printf("loadLabelName %s\n", locationFilename);
@@ -371,13 +383,13 @@ static int process_fp32(float *box_tensor, float *score_tensor, float *score_sum
 }
 
 
-
 void cleanupResources()
 {
     // Cleanup code here, e.g., freeing dynamically allocated resources.
 }
 
 int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float conf_threshold, float nms_threshold, float scale_w, float scale_h, detect_result_group_t *od_results)
+// int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, float conf_threshold, float nms_threshold, float scale_w, float scale_h,detect_result_group_t *od_results)
 {
     //初始化标签
     // static int init = -1;
@@ -406,7 +418,6 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
         isInitialized = true;   // 标记初始化完成
         atexit(cleanupResources);   // 注册清理资源的函数，在程序退出时调用
     }
-
     // 创建用于存储目标框信息的向量
     std::vector<float> filterBoxes;
     std::vector<float> objProbs;
@@ -421,12 +432,13 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
     // 获取模型输入的宽度和高度信息
     int model_in_w = rknn_app->width;
     int model_in_h = rknn_app->height;
-    
+    // printf("model_in_w = %d, model_in_h = %d\n", model_in_w, model_in_h);
+
     // 将目标检测结果结构体的内存区域全部设置为零
     memset(od_results, 0, sizeof(detect_result_group_t));
-
     int dfl_len = rknn_app->output_attrs[0].dims[1] / 4;    // 64/4=16  特征图每个通道的长度
     int output_per_branch = rknn_app->io_num.n_output / 3;   // 9/3=3   每个分支的输出数
+    // printf("dfl_len = %d, output_per_branch = %d\n", dfl_len, output_per_branch);
     
     // 遍历三个分支
     for(int i = 0; i < 3; i++)
@@ -449,31 +461,31 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
         grid_h = rknn_app->output_attrs[box_idx].dims[2];
         grid_w = rknn_app->output_attrs[box_idx].dims[3];
         stride = model_in_h / grid_h;
-    
         // 根据量化情况，选择调用相应的处理函数
 
-        // validCount += process_i8((int8_t *)outputs[box_idx].buf, rknn_app->output_attrs[box_idx].zp, rknn_app->output_attrs[box_idx].scale,
-        //                              (int8_t *)outputs[score_idx].buf, rknn_app->output_attrs[score_idx].zp, rknn_app->output_attrs[score_idx].scale,
-        //                              (int8_t *)score_sum, score_sum_zp, score_sum_scale,
-        //                              grid_h, grid_w, stride, dfl_len, 
-        //                              filterBoxes, objProbs, classId, conf_threshold);
-        
-        if(rknn_app->is_quant)
-        {
-            // 处理量化数据
-            validCount += process_i8((int8_t *)outputs[box_idx].buf, rknn_app->output_attrs[box_idx].zp, rknn_app->output_attrs[box_idx].scale,
+        validCount += process_i8((int8_t *)outputs[box_idx].buf, rknn_app->output_attrs[box_idx].zp, rknn_app->output_attrs[box_idx].scale,
                                      (int8_t *)outputs[score_idx].buf, rknn_app->output_attrs[score_idx].zp, rknn_app->output_attrs[score_idx].scale,
                                      (int8_t *)score_sum, score_sum_zp, score_sum_scale,
                                      grid_h, grid_w, stride, dfl_len, 
                                      filterBoxes, objProbs, classId, conf_threshold);
-        }
-        else
-        {
-            // 处理浮点数数据
-            validCount += process_fp32((float *)outputs[box_idx].buf, (float *)outputs[score_idx].buf, (float *)score_sum,
-                                       grid_h, grid_w, stride, dfl_len, 
-                                       filterBoxes, objProbs, classId, conf_threshold);
-        }
+        
+        // printf("is_quant=%d\n",rknn_app->is_quant);
+        // if(rknn_app->is_quant)
+        // {
+        //     // 处理量化数据
+        //     validCount += process_i8((int8_t *)outputs[box_idx].buf, rknn_app->output_attrs[box_idx].zp, rknn_app->output_attrs[box_idx].scale,
+        //                              (int8_t *)outputs[score_idx].buf, rknn_app->output_attrs[score_idx].zp, rknn_app->output_attrs[score_idx].scale,
+        //                              (int8_t *)score_sum, score_sum_zp, score_sum_scale,
+        //                              grid_h, grid_w, stride, dfl_len, 
+        //                              filterBoxes, objProbs, classId, conf_threshold);
+        // }
+        // else
+        // {
+        //     // 处理浮点数数据
+        //     validCount += process_fp32((float *)outputs[box_idx].buf, (float *)outputs[score_idx].buf, (float *)score_sum,
+        //                                grid_h, grid_w, stride, dfl_len, 
+        //                                filterBoxes, objProbs, classId, conf_threshold);
+        // }
     }
     
     // no object detect 如果没有检测到目标，直接返回
@@ -526,6 +538,8 @@ int Postprocess(rkyolov8s* rknn_app, rknn_output *outputs, BOX_RECT pads, float 
         // 根据索引获取目标框的坐标信息,类别和置信度（这也是还在模型尺寸上）
         float x1 = filterBoxes[n * 4 + 0] - pads.left;
         float y1 = filterBoxes[n * 4 + 1] - pads.top;
+        // float x1 = filterBoxes[n * 4 + 0];    //使用rga时需要用这个
+        // float y1 = filterBoxes[n * 4 + 1];
         float x2 = x1 + filterBoxes[n * 4 + 2];
         float y2 = y1 + filterBoxes[n * 4 + 3];
         int id = classId[n];
