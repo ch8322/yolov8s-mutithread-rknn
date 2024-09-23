@@ -2,7 +2,7 @@
 * 按照RKNN官方的方法，使用rk的yolov8代码，导出onnx模型，然后再转成RKNN模型；
 * RK官方yolov8源码[yolov8s](https://github.com/airockchip/ultralytics_yolov8)
 * [多线程](https://github.com/leafqycc/rknn-cpp-Multithreading/tree/main)
-
+* 使用[多线程](https://github.com/leafqycc/rknn-cpp-Multithreading/tree/main)操作,分别参考main和1.5.0分支，提高rk3588/rk3588s的NPU使用率, 进而提高推理帧数
 
 # 演示说明
 * 模型部署的板端是rk3588
