@@ -183,20 +183,9 @@ rkyolov8s::~rkyolov8s()
             }
         }
     }
-    if (rkModel != 0) {
-        ret = rknn_destroy(rkModel);
-        if (ret != RKNN_SUCC) {
-            printf("rknn_destroy fail! ret=%d\n", ret);
-            exit (-1);
-        }
-        rkModel = 0;
-    }
-
-    // ret = rknn_destroy(rkModel);
-    // delete[] input_attrs;
-    // delete[] output_attrs;
-    // if (model_data)
-    //     free(model_data);
+    ret = rknn_destroy(rkModel);
+    if (model_data)
+        free(model_data);
 }
 
 int rkyolov8s::interf()
